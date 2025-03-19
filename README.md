@@ -1,5 +1,17 @@
 # rateAndPurchase
 
+### install libs 
+
+// add maven 
+``` sh
+  maven("https://jitpack.io")
+```
+// add gradle
+ ```sh
+    
+    implementation("com.github.phamdat23:rateAndPurchase:1.0.0")
+ ```
+
 ### Init Purchase
 
 add this to create of your first activity
