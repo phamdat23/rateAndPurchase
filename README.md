@@ -2,14 +2,14 @@
 
 ### install libs 
 
-// add maven 
+// cài maven 
 ``` sh
-  maven("https://jitpack.io")
+    maven("https://jitpack.io")
 ```
-// add gradle
+// cài gradle
  ```sh
-    
-    implementation("com.github.phamdat23:rateAndPurchase:1.0.0")
+    implementation("com.github.phamdat23:rateAndPurchase:1.0.0-beta1")
+    implementation("com.android.billingclient:billing:7.1.1")
  ```
 
 ### Init Purchase
@@ -19,19 +19,23 @@ isDebug
 true: mua purchase với thời gian test
 false: mua purchase với thời gian live
 
+hàm initIap   để check xem là ứng dụng  đã có iap hay chưa
 
 PurchaseManager.isBought = true : đã có purchase
 PurchaseManager.isBought = false: không có purchase
+
 ``` shell
-
-
    PurchaseManager.initIap(context = this, isDebug = true, object :PurchaseManager.InitIapListenner{
             override fun initPurcahseSussces(
                 billingResult: com.android.billingclient.api.BillingResult,
                 purchases: List<com.android.billingclient.api.Purchase>
             ) {
                 lifecycleScope.launch(Dispatchers.Main){
-                    //
+                      if (PurchaseManager.isBought) {
+                           // iap đã có 
+                        } else {
+                          // iap chưa có
+                        }
                 }
             }
         })
@@ -39,6 +43,8 @@ PurchaseManager.isBought = false: không có purchase
 ```
 
 ### query Purchase
+listKey : truyền listId vào để query
+isInapp: là chọn type  để query (true: type inapp, false: type sub)
 
 ``` shell
 
@@ -46,7 +52,16 @@ PurchaseManager.isBought = false: không có purchase
             override fun updatePurchase() {
                 lifecycleScope.launch(Dispatchers.Main){
                     // khi mua các gói thì sẽ update ở đây
-                    
+                   if (PurchaseManager.isBought) {
+                            Toast.makeText(this@IapActivity, "Success", Toast.LENGTH_SHORT).show()
+                            val intent = Intent(this@IapActivity, MainActivity::class.java)
+                            intent.flags =
+                                Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                            startActivity(intent)
+                        } else {
+                            Toast.makeText(this@IapActivity, "Failed purchase", Toast.LENGTH_SHORT)
+                                .show()
+                        }
                     
                 }
             }
@@ -70,9 +85,44 @@ PurchaseManager.isBought = false: không có purchase
 ```
 
 ### subscribe Purchase
-
+// hàm mua thì truyền 1 productDetail 
 ``` shell
    PurchaseManager.subscribePurchaseInapp(context = this, productDetails = productDetail)
+```
+
+
+### restore Purchase
+// hàm  để restore lại xem có gói iap nào đã mua hay chưa
+PurchaseManager.isBought = true : đã có purchase
+PurchaseManager.isBought = false: không có purchase
+``` shell
+  Purchase.reStorePurchase(context = this, object : Purchase.InitIapListenner {
+                override fun initPurcahseSussces(
+                    billingResult: BillingResult,
+                    purchases: List<com.android.billingclient.api.Purchase>
+                ) {
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        if (PurchaseManager.isBought) {
+                            Toast.makeText(
+                                this@IapActivity,
+                                getString(R.string.subscription_has_been_purchased),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            val intent = Intent(this@IapActivity, MainActivity::class.java)
+                            intent.flags =
+                                Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                            startActivity(intent)
+                        } else {
+                            Toast.makeText(
+                                this@IapActivity,
+                                getString(R.string.subscription_has_not_been_purchased),
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                        }
+                    }
+                }
+            })
 ```
 
 ### create dialog rate
