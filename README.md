@@ -14,8 +14,9 @@
 
 ### Init Purchase
 
-để ở activity đầu khi vào app
-isDebug
+để ở activity đầu khi vào app 
+
+isDebug 
 true: mua purchase với thời gian test
 false: mua purchase với thời gian live
 
@@ -46,6 +47,8 @@ PurchaseManager.isBought = false: không có purchase
 listKey : truyền listId vào để query
 isInapp: là chọn type  để query (true: type inapp, false: type sub)
 
+queryFail là khi không trả về gì và bị lỗi
+productDetailsList có sort theo giá từ thấp đến cao
 ``` shell
 
  PurchaseManager.queryDetailPurchase(context = this, listKey = listOf(), isInapp = true, queryIap = object : PurchaseManager.QueryPurChaseListenner{
