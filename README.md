@@ -14,7 +14,7 @@
 
 ### Init Purchase
 
-add this to create of your first activity
+để ở activity đầu khi vào app
 isDebug
 true: mua purchase với thời gian test
 false: mua purchase với thời gian live
