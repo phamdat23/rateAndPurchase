@@ -186,7 +186,6 @@ object PurchaseManager {
         mBillingClient =
             BillingClient.newBuilder(context).enablePendingPurchases().setListener { p0, p1 ->
                 if (p0.responseCode == BillingClient.BillingResponseCode.OK && p1 != null) {
-                    queryIap.updatePurchase()
                     for (purchase in p1) {
                         handlePurchase2(purchase)
                     }
@@ -194,10 +193,10 @@ object PurchaseManager {
                     isEnableAds = false
                     setCurrentTimeBoughtIap(context)
                     setCurrentKeyIap(context, key = currentProductId)
+                    queryIap.updatePurchase()
                 } else {
                     isBought = false
                     isEnableAds = true
-//                    queryIap.queryFail()
                 }
             }.build()
         mBillingClient?.startConnection(object : BillingClientStateListener {
@@ -219,7 +218,15 @@ object PurchaseManager {
                     val params = QueryProductDetailsParams.newBuilder()
                     params.setProductList(productList)
                     mBillingClient?.queryProductDetailsAsync(params.build()) { billingResult1: BillingResult, productDetailsList: List<ProductDetails>? ->
-                        queryIap.querySussces(billingResult1, productDetailsList)
+                        if(!productDetailsList.isNullOrEmpty()){
+                            val listNew = productDetailsList.sortedBy {
+                                it.oneTimePurchaseOfferDetails?.priceAmountMicros
+                            }
+                            queryIap.querySussces(billingResult1, listNew)
+                        }else{
+                            queryIap.queryFail()
+                        }
+
                     }
                 } else {
                     queryIap.queryFail()
