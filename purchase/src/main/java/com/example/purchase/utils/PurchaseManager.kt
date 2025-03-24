@@ -297,7 +297,7 @@ object PurchaseManager {
     interface QueryPurChaseListenner {
         fun updatePurchase()
         fun queryFail()
-        fun querySussces(billingResult1: BillingResult, productDetailsList: List<ProductDetails>?)
+        fun querySussces(billingResult1: BillingResult, productDetailsList: List<ProductDetails>)
     }
 
     fun checkLifetime(key: String): Boolean {
