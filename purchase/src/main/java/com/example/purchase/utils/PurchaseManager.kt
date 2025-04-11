@@ -21,14 +21,15 @@ import com.android.billingclient.api.QueryPurchasesParams
 import java.util.concurrent.TimeUnit
 
 object PurchaseManager {
-    private  var mListKey = listOf<String>()
+    private var mListKey = listOf<String>()
     private var isIapTest: Boolean = true
-    private  var mBillingClient: BillingClient? = null
+    private var mBillingClient: BillingClient? = null
     var isBought = false
     private var isEnableAds = true
     private val purchasesUpdatedListener =
         PurchasesUpdatedListener { _, _ -> }
 
+    @JvmStatic
     fun initIap(context: Context, isDebug: Boolean, listenner: InitIapListenner) {
         isIapTest = isDebug
         mBillingClient = BillingClient.newBuilder(context)
@@ -90,7 +91,6 @@ object PurchaseManager {
     }
 
     private fun handlePurchase2(purchase: Purchase) {
-        Log.e("===IAP", "handlePurchase2:isLifetime:$isLifetime ")
         if (isLifetime) {
             if (isIapTest) {
                 if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED && !purchase.isAcknowledged) {
@@ -120,6 +120,7 @@ object PurchaseManager {
 
     }
 
+    @JvmStatic
     fun reStorePurchase(context: Context, listenner: InitIapListenner) {
         mBillingClient?.startConnection(object : BillingClientStateListener {
             override fun onBillingServiceDisconnected() {
@@ -175,6 +176,7 @@ object PurchaseManager {
     private var currentProductId: String = ""
     var isLifetime = false
 
+    @JvmStatic
     fun queryDetailPurchase(
         context: Context,
         listKey: List<String>,
@@ -182,7 +184,6 @@ object PurchaseManager {
         queryIap: QueryPurChaseListenner,
     ) {
         mListKey = listKey.sortedBy { it }
-        Log.d("===IAP", "queryDetailPurchase: $mListKey", )
         mBillingClient =
             BillingClient.newBuilder(context).enablePendingPurchases().setListener { p0, p1 ->
                 if (p0.responseCode == BillingClient.BillingResponseCode.OK && p1 != null) {
@@ -218,12 +219,16 @@ object PurchaseManager {
                     val params = QueryProductDetailsParams.newBuilder()
                     params.setProductList(productList)
                     mBillingClient?.queryProductDetailsAsync(params.build()) { billingResult1: BillingResult, productDetailsList: List<ProductDetails>? ->
-                        if(!productDetailsList.isNullOrEmpty()){
+                        if (!productDetailsList.isNullOrEmpty()) {
                             val listNew = productDetailsList.sortedBy {
-                                it.oneTimePurchaseOfferDetails?.priceAmountMicros
+                                if(isInapp){
+                                    it.oneTimePurchaseOfferDetails?.priceAmountMicros
+                                }else{
+                                    it.subscriptionOfferDetails?.get(0)?.pricingPhases?.pricingPhaseList?.get(0)?.priceAmountMicros
+                                }
                             }
                             queryIap.querySussces(billingResult1, listNew)
-                        }else{
+                        } else {
                             queryIap.queryFail()
                         }
 
@@ -259,10 +264,10 @@ object PurchaseManager {
         }
     }
 
+    @JvmStatic
     fun subscribePurchaseInapp(context: Context, productDetails: ProductDetails) {
         try {
             isLifetime = checkLifetime(productDetails.productId)
-            Log.e("====IAP", "subscribePurchaseInapp: ${productDetails.productId}")
             val productDetailsParamsList =
                 listOf(
                     BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -309,20 +314,24 @@ object PurchaseManager {
             return if (getCurrentKeyIap(context).endsWith("1")) {
                 val currentTime = System.currentTimeMillis()
                 val timeBought = getCurrentTimeBoughtIap(context = context)
-                TimeUnit.MILLISECONDS.toMillis(currentTime - timeBought) <= 1
+                TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 2
             } else if (getCurrentKeyIap(context).endsWith("2")) {
                 val currentTime = System.currentTimeMillis()
                 val timeBought = getCurrentTimeBoughtIap(context = context)
-                val check = TimeUnit.MILLISECONDS.toMillis(currentTime - timeBought) <= 2
+                val check = TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 3
                 check
             } else if (getCurrentKeyIap(context).endsWith("5")) {
                 val currentTime = System.currentTimeMillis()
                 val timeBought = getCurrentTimeBoughtIap(context = context)
-                TimeUnit.MILLISECONDS.toMillis(currentTime - timeBought) <= 3
+                TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 4
             } else if (getCurrentKeyIap(context).endsWith("10")) {
                 val currentTime = System.currentTimeMillis()
                 val timeBought = getCurrentTimeBoughtIap(context = context)
-                TimeUnit.MILLISECONDS.toMillis(currentTime - timeBought) <= 4
+                TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 5
+            } else if (getCurrentKeyIap(context).endsWith("0.5")) {
+                val currentTime = System.currentTimeMillis()
+                val timeBought = getCurrentTimeBoughtIap(context = context)
+                TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 1
             } else if (getCurrentKeyIap(context).endsWith("20")) {
                 true
             } else {
@@ -346,6 +355,10 @@ object PurchaseManager {
                 val currentTime = System.currentTimeMillis()
                 val timeBought = getCurrentTimeBoughtIap(context = context)
                 TimeUnit.MILLISECONDS.toDays(currentTime - timeBought) <= 30
+            } else if (getCurrentKeyIap(context).endsWith("0.5")) {
+                val currentTime = System.currentTimeMillis()
+                val timeBought = getCurrentTimeBoughtIap(context = context)
+                TimeUnit.MILLISECONDS.toDays(currentTime - timeBought) <= 1
             } else if (getCurrentKeyIap(context).endsWith("20")) {
                 true
             } else {
@@ -388,6 +401,7 @@ object PurchaseManager {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         return cm.activeNetworkInfo != null && cm.activeNetworkInfo!!.isConnected
     }
+
     @JvmStatic
     fun formatPriceIap(p: String): String {
         return try {
