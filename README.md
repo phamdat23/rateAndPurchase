@@ -8,7 +8,7 @@
 ```
 // cài gradle
  ```sh
-    implementation("com.github.phamdat23:rateAndPurchase:1.0.1")
+    implementation("com.github.phamdat23:rateAndPurchase:1.0.3-beta1")
     implementation("com.android.billingclient:billing:7.1.1")
  ```
 
