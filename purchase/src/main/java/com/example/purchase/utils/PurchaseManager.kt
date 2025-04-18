@@ -63,7 +63,7 @@ object PurchaseManager {
                         mBillingClient?.queryPurchasesAsync(
                             params2
                         ) { _, purchasesSub ->
-                            if (checkTimeIap(context)) {
+                            if (checkTimeIap(context)|| purchases.isNotEmpty()) {
                                 isBought = true
                                 isEnableAds = false
                                 for (purchase in purchasesSub) {
@@ -109,7 +109,6 @@ object PurchaseManager {
             }
 
         } else {
-
             if (isSub) {
                 handlePurchase(purchase)
             } else {
@@ -199,7 +198,7 @@ object PurchaseManager {
                     }
                     isBought = true
                     isEnableAds = false
-                    if (isSub) {
+                    if (!isSub) {
                         setCurrentTimeBoughtIap(context)
                         setCurrentKeyIap(context, key = currentProductId)
                     }
