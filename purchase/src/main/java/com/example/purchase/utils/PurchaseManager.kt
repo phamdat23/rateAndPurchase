@@ -29,6 +29,9 @@ object PurchaseManager {
     private var mBillingClient: BillingClient? = null
     var isBought = false
     private var isEnableAds = true
+    private var isSub = false
+    private var currentProductId: String = ""
+    var isLifetime = false
     private val purchasesUpdatedListener =
         PurchasesUpdatedListener { _, _ -> }
 
@@ -67,7 +70,7 @@ object PurchaseManager {
                         mBillingClient?.queryPurchasesAsync(
                             params2
                         ) { _, purchasesSub ->
-                            if (checkTimeIap(context)) {
+                            if (checkTimeIap(context)|| purchases.isNotEmpty()) {
                                 isBought = true
                                 isEnableAds = false
                                 for (purchase in purchasesSub) {
@@ -113,16 +116,21 @@ object PurchaseManager {
             }
 
         } else {
-            if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED && !purchase.isAcknowledged) {
-                val prams = ConsumeParams.newBuilder()
-                    .setPurchaseToken(purchase.purchaseToken)
-                    .build()
+            if (isSub) {
+                handlePurchase(purchase)
+            } else {
+                if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED && !purchase.isAcknowledged) {
+                    val prams = ConsumeParams.newBuilder()
+                        .setPurchaseToken(purchase.purchaseToken)
+                        .build()
 
-                mBillingClient?.consumeAsync(prams) { billing, purchaseToken ->
+                    mBillingClient?.consumeAsync(prams) { billing, purchaseToken ->
+
+                    }
 
                 }
-
             }
+
         }
 
     }
@@ -180,8 +188,6 @@ object PurchaseManager {
         })
     }
 
-    private var currentProductId: String = ""
-    var isLifetime = false
 
     @JvmStatic
     fun queryDetailPurchase(
@@ -199,8 +205,10 @@ object PurchaseManager {
                     }
                     isBought = true
                     isEnableAds = false
-                    setCurrentTimeBoughtIap(context)
-                    setCurrentKeyIap(context, key = currentProductId)
+                    if (!isSub) {
+                        setCurrentTimeBoughtIap(context)
+                        setCurrentKeyIap(context, key = currentProductId)
+                    }
                     queryIap.updatePurchase()
                 } else {
                     isBought = false
@@ -251,8 +259,10 @@ object PurchaseManager {
         })
     }
 
-    private fun subscribePurchase(context: Context, productDetails: ProductDetails) {
+    @JvmStatic
+    fun subscribePurchase(context: Context, productDetails: ProductDetails) {
         try {
+            isSub = true
             val offerToken = productDetails.subscriptionOfferDetails?.get(0)?.offerToken
             val productDetailsParamsList =
                 listOf(
@@ -278,6 +288,7 @@ object PurchaseManager {
     @JvmStatic
     fun subscribePurchaseInapp(context: Context, productDetails: ProductDetails) {
         try {
+            isSub = false
             isLifetime = checkLifetime(productDetails.productId)
             val productDetailsParamsList =
                 listOf(
@@ -321,6 +332,10 @@ object PurchaseManager {
     }
 
     fun checkTimeIap(context: Context): Boolean {
+        val currentTime = System.currentTimeMillis()
+        val timeBought = getCurrentTimeBoughtIap(context = context)
+        if (isIapTest) {
+            return if (getCurrentKeyIap(context).endsWith("0.5")) {
         if (isIapTest) {
             return if(getCurrentKeyIap(context).endsWith("0.3")){
                 val currentTime = System.currentTimeMillis()
@@ -331,21 +346,13 @@ object PurchaseManager {
                 val timeBought = getCurrentTimeBoughtIap(context = context)
                 TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 1
             } else if (getCurrentKeyIap(context).endsWith("1")) {
-                val currentTime = System.currentTimeMillis()
-                val timeBought = getCurrentTimeBoughtIap(context = context)
                 TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 2
             } else if (getCurrentKeyIap(context).endsWith("2")) {
-                val currentTime = System.currentTimeMillis()
-                val timeBought = getCurrentTimeBoughtIap(context = context)
                 val check = TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 3
                 check
             } else if (getCurrentKeyIap(context).endsWith("5")) {
-                val currentTime = System.currentTimeMillis()
-                val timeBought = getCurrentTimeBoughtIap(context = context)
                 TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 4
             } else if (getCurrentKeyIap(context).endsWith("10")) {
-                val currentTime = System.currentTimeMillis()
-                val timeBought = getCurrentTimeBoughtIap(context = context)
                 TimeUnit.MILLISECONDS.toMinutes(currentTime - timeBought) <= 5
             } else if (getCurrentKeyIap(context).endsWith("20")) {
                 true
@@ -353,6 +360,8 @@ object PurchaseManager {
                 false
             }
         } else {
+            return if (getCurrentKeyIap(context).endsWith("0.5")) {
+                TimeUnit.MILLISECONDS.toDays(currentTime - timeBought) <= 1
             return if(getCurrentKeyIap(context).endsWith("0.3")){
                 val currentTime = System.currentTimeMillis()
                 val timeBought = getCurrentTimeBoughtIap(context = context)
@@ -362,21 +371,13 @@ object PurchaseManager {
                 val timeBought = getCurrentTimeBoughtIap(context = context)
                 TimeUnit.MILLISECONDS.toDays(currentTime - timeBought) <= 2
             } else if (getCurrentKeyIap(context).endsWith("1")) {
-                val currentTime = System.currentTimeMillis()
-                val timeBought = getCurrentTimeBoughtIap(context = context)
                 TimeUnit.MILLISECONDS.toDays(currentTime - timeBought) <= 3
             } else if (getCurrentKeyIap(context).endsWith("2")) {
-                val currentTime = System.currentTimeMillis()
-                val timeBought = getCurrentTimeBoughtIap(context = context)
                 val check = TimeUnit.MILLISECONDS.toDays(currentTime - timeBought) <= 6
                 check
             } else if (getCurrentKeyIap(context).endsWith("5")) {
-                val currentTime = System.currentTimeMillis()
-                val timeBought = getCurrentTimeBoughtIap(context = context)
                 TimeUnit.MILLISECONDS.toDays(currentTime - timeBought) <= 15
             } else if (getCurrentKeyIap(context).endsWith("10")) {
-                val currentTime = System.currentTimeMillis()
-                val timeBought = getCurrentTimeBoughtIap(context = context)
                 TimeUnit.MILLISECONDS.toDays(currentTime - timeBought) <= 30
             } else if (getCurrentKeyIap(context).endsWith("20")) {
                 true
