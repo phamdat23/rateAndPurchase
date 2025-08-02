@@ -36,10 +36,12 @@ object PurchaseManager {
         PurchasesUpdatedListener { _, _ -> }
 
 
-    private val pendingParams: PendingPurchasesParams = PendingPurchasesParams.newBuilder().build()
+    private lateinit var pendingParams: PendingPurchasesParams
 
     @JvmStatic
     fun initIap(context: Context, isDebug: Boolean, listenner: InitIapListenner) {
+        pendingParams = PendingPurchasesParams.newBuilder().enableOneTimeProducts().build()
+
         isIapTest = isDebug
         mBillingClient = BillingClient.newBuilder(context)
             .setListener(purchasesUpdatedListener)
